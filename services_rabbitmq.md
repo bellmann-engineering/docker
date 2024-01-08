@@ -17,7 +17,101 @@
    +--------------+         +--------------+         +--------------+
  ```
 
-### Docker Compose File (`docker-compose.yml`):
+# Dockerfiles
+
+### Dockerfile for `service1`:
+
+```Dockerfile
+# Use an official Python runtime as a parent image
+FROM python:3.9
+
+# Set the working directory in the container
+WORKDIR /app
+
+# Copy the current directory contents into the container at /app
+COPY . /app
+
+# Install any needed packages specified in requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Run service1.py when the container launches
+CMD ["python", "service1.py"]
+```
+
+### Dockerfile for `service2`:
+
+```Dockerfile
+# Use an official Python runtime as a parent image
+FROM python:3.9
+
+# Set the working directory in the container
+WORKDIR /app
+
+# Copy the current directory contents into the container at /app
+COPY . /app
+
+# Install any needed packages specified in requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Run service2.py when the container launches
+CMD ["python", "service2.py"]
+```
+
+In both Dockerfiles, `requirements.txt` should contain the necessary Python packages for your services, including `pika` for RabbitMQ communication.
+
+Assuming you have `service1.py` and `service2.py` as the entry points for your services, you need to modify the CMD accordingly. Here's a very basic example:
+
+### service1.py:
+
+```python
+import pika
+
+# Establish a connection to RabbitMQ server
+connection = pika.BlockingConnection(pika.ConnectionParameters('rabbitmq'))
+channel = connection.channel()
+
+# Declare a queue named 'hello'
+channel.queue_declare(queue='hello')
+
+# Send a test message to 'hello' queue
+channel.basic_publish(exchange='',
+                      routing_key='hello',
+                      body='Hello from Service 1!')
+
+print(" [x] Sent 'Hello from Service 1!'")
+
+# Close the connection
+connection.close()
+```
+
+### service2.py:
+
+```python
+import pika
+
+# Establish a connection to RabbitMQ server
+connection = pika.BlockingConnection(pika.ConnectionParameters('rabbitmq'))
+channel = connection.channel()
+
+# Declare a queue named 'hello'
+channel.queue_declare(queue='hello')
+
+# Define a callback function to process incoming messages
+def callback(ch, method, properties, body):
+    print(f" [x] Received {body}")
+
+# Set up the consumer and start consuming messages from 'hello' queue
+channel.basic_consume(queue='hello',
+                      on_message_callback=callback,
+                      auto_ack=True)
+
+print(' [*] Waiting for messages. To exit press CTRL+C')
+channel.start_consuming()
+```
+
+Make sure to adapt these scripts to fit the logic and functionality of your actual services. Once the Docker images are built and the containers are running, `service2` should receive the message sent by `service1` through RabbitMQ.
+
+# Docker Compose File (`docker-compose.yml`):
 
 ```yaml
 version: '3'
@@ -55,7 +149,7 @@ services:
       - "15672:15672"
 ```
 
-### Directory Structure:
+# Directory Structure:
 
 ```
 project/
@@ -73,7 +167,7 @@ project/
     └── service2.py
 ```
 
-### Verification:
+# Verification:
 
 1. Save the Docker Compose file and the Dockerfiles in the appropriate directories (`service1` and `service2`).
 2. In each service directory, create a `requirements.txt` file with `pika` listed as a dependency.
@@ -104,4 +198,4 @@ project/
    docker-compose down
    ```
 
-Remember to adapt the code and configurations based on your actual service logic and requirements. This example is a starting point, and in a production environment, you may need to handle errors, implement retries, and add more features to ensure robust communication between services.
+
