@@ -59,7 +59,21 @@ CMD ["python", "service2.py"]
 
 In both Dockerfiles, `requirements.txt` should contain the necessary Python packages for your services, including `pika` for RabbitMQ communication.
 
-Assuming you have `service1.py` and `service2.py` as the entry points for your services, you need to modify the CMD accordingly. Here's a very basic example:
+### `service1/requirements.txt`:
+
+```plaintext
+pika==1.2.0
+```
+
+### `service2/requirements.txt`:
+
+```plaintext
+pika==1.2.0
+```
+
+These files specify the version of the `pika` package required for RabbitMQ communication. You may need to adjust the version number based on your project requirements or any specific compatibility considerations. To add more dependencies for your actual services, you can list them in these `requirements.txt` files, and they will be installed when building the Docker images.
+
+Assuming you have `service1.py` and `service2.py` as the entry points for your services, you need to modify the CMD accordingly:
 
 ### service1.py:
 
