@@ -238,7 +238,7 @@ RUN chmod +x /app/wait-for-rabbitmq.sh
 CMD ["./wait-for-rabbitmq.sh", "rabbitmq", "python", "service1.py"]
 ```
 
-oder im Dockerfile:
+alternativ:
 
 ```
 # Install netcat (nc) for connection testing
