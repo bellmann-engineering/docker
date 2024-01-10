@@ -237,3 +237,14 @@ RUN chmod +x /app/wait-for-rabbitmq.sh
 # Run service1.py when the container launches, waiting for RabbitMQ to be available
 CMD ["./wait-for-rabbitmq.sh", "rabbitmq", "python", "service1.py"]
 ```
+
+oder im Dockerfile:
+
+```
+# Install netcat (nc) for connection testing
+RUN apt-get update && apt-get install -y netcat
+
+# Wait for RabbitMQ to be available on port 5672 before running the application
+CMD ["sh", "-c", "until nc -z rabbitmq 5672; do echo 'Waiting for RabbitMQ...'; sleep 1; done; python service1.py"]
+
+```
