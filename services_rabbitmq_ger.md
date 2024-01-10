@@ -204,47 +204,52 @@ project/
 
 # Troubleshooting
 
-Um auf den RabbitMq Service zu warten:
+## Um auf den RabbitMq Service zu warten:
 
-Script `wait-for-rabbitmq.sh`:
-
-```
-#!/bin/bash
-set -e
-
-host="$1"
-shift
-cmd="$@"
-
-until nc -z "$host" 5672; do
-  >&2 echo "RabbitMQ is unavailable - sleeping"
-  sleep 1
-done
-
->&2 echo "RabbitMQ is up - executing command"
-exec $cmd
-```
-
-In der Dockerfile der _beiden_ Services:
+Eigenes Dockerfile für rabbitmq basierend auf demselben Base-Image:
 
 ```
+FROM rabbitmq:3-management
+
+# für den Healthcheck
+RUN apt-get update
+RUN apt-get install -y curl 
+```
+
+dann im compose File auf das neue Dockerfile verweisen und einen Healthcheck hinzufügen:
+```
+  rabbitmq:
+    build:
+      context: ./rabbitmq
+    # image: "rabbitmq:3-management"
+    # hostname: rabbitmq
 ...
-
-# Add the wait-for script
-ADD wait-for-rabbitmq.sh /app/wait-for-rabbitmq.sh
-RUN chmod +x /app/wait-for-rabbitmq.sh
-
-# Run service1.py when the container launches, waiting for RabbitMQ to be available
-CMD ["./wait-for-rabbitmq.sh", "rabbitmq", "python", "service1.py"]
+    healthcheck:
+        test: ["CMD", "curl", "-f", "http://localhost:15672"]
+        interval: 30s
+        timeout: 10s
+        retries: 5
 ```
 
-alternativ:
+In der `docker-compose.yaml` der _beiden_ Services nun `depends_on` um diesen erweitern:
 
 ```
-# Install ncat for connection testing (similar to netcat)
-RUN apt-get update && apt-get install -y nmap
+  service2:
+    container_name: service2
+...
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
 
-# Wait for RabbitMQ to be available on port 5672 before running the application
-CMD ["sh", "-c", "until ncat -z rabbitmq 5672; do echo 'Waiting for RabbitMQ...'; sleep 1; done; python service1.py"]
+```
+Danach `docker-compose up --build -d`
+Mit `docker-compose ps` überprüfen, ob alles startet.
 
+## Um auf der Log-Konsole Ausgaben zu bekommen
+
+Um mittels `docker-compose logs service1` bzw. `docker-compose logs service2` Ausgaben zu bekommen für Python die Option _unbuffered_ aktivieren:
+
+Dockerfile(s):
+```
+CMD ["python", "-u", "service1.py"]
 ```
