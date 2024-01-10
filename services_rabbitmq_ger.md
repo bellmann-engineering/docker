@@ -241,10 +241,10 @@ CMD ["./wait-for-rabbitmq.sh", "rabbitmq", "python", "service1.py"]
 alternativ:
 
 ```
-# Install netcat (nc) for connection testing
-RUN apt-get update && apt-get install -y netcat
+# Install ncat for connection testing (similar to netcat)
+RUN apt-get update && apt-get install -y nmap
 
 # Wait for RabbitMQ to be available on port 5672 before running the application
-CMD ["sh", "-c", "until nc -z rabbitmq 5672; do echo 'Waiting for RabbitMQ...'; sleep 1; done; python service1.py"]
+CMD ["sh", "-c", "until ncat -z rabbitmq 5672; do echo 'Waiting for RabbitMQ...'; sleep 1; done; python service1.py"]
 
 ```
