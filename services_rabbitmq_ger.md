@@ -201,3 +201,39 @@ project/
    ```bash
    docker-compose down
    ```
+
+# Troubleshooting
+
+Um auf den RabbitMq Service zu warten:
+
+Script `wait-for-rabbitmq.sh`:
+
+```
+#!/bin/bash
+set -e
+
+host="$1"
+shift
+cmd="$@"
+
+until nc -z "$host" 5672; do
+  >&2 echo "RabbitMQ is unavailable - sleeping"
+  sleep 1
+done
+
+>&2 echo "RabbitMQ is up - executing command"
+exec $cmd
+```
+
+In der Dockerfile der _beiden_ Services:
+
+```
+...
+
+# Add the wait-for script
+ADD wait-for-rabbitmq.sh /app/wait-for-rabbitmq.sh
+RUN chmod +x /app/wait-for-rabbitmq.sh
+
+# Run service1.py when the container launches, waiting for RabbitMQ to be available
+CMD ["./wait-for-rabbitmq.sh", "rabbitmq", "python", "service1.py"]
+```
